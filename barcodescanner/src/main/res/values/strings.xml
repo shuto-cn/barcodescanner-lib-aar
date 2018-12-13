@@ -140,4 +140,6 @@
   <string name="result_wifi">Found WLAN Configuration</string>
   <string name="sbc_name">Google Book Search</string>
   <string name="wifi_changing_network">Requesting connection to network\u2026</string>
+    <string name="totch_text_off">打开手电筒</string>
+  <string name="totch_text_on">关闭手电筒</string>
 </resources>

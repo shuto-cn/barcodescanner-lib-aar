@@ -21,7 +21,7 @@
                android:layout_width="fill_parent"
                android:layout_height="fill_parent"/>
 
-  <com.google.zxing.client.android.ViewfinderView
+  <org.google.zxing.client.android.ViewfinderView
       android:id="@+id/viewfinder_view"
       android:layout_width="fill_parent"
       android:layout_height="fill_parent"/>
@@ -192,14 +192,23 @@
     </LinearLayout>
 
   </LinearLayout>
-
-  <TextView android:id="@+id/status_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|center_horizontal"
-            android:background="@color/transparent"
-            android:text="@string/msg_default_status"
-            android:textColor="@color/status_text"/>
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_gravity="bottom|center_horizontal"
+      android:background="@color/transparent"
+      android:text="扫描设备或者空间二维码"
+      android:layout_marginBottom="80dp"
+      android:textColor="@color/status_text" />
+  <TextView
+      android:id="@+id/status_view"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_gravity="bottom|center_horizontal"
+      android:background="@color/transparent"
+      android:text=""
+      android:layout_marginBottom="80dp"
+      android:textColor="@color/transparent" />
 
   <Button android:id="@+id/flip_button"
           android:layout_width="wrap_content"
@@ -209,10 +218,20 @@
           android:visibility="invisible"/>
 
   <Button android:id="@+id/torch_button"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:layout_gravity="top|right"
+          android:layout_width="60dp"
+          android:layout_height="60dp"
+          android:layout_gravity="bottom|center_horizontal"
           android:drawableLeft="@drawable/toggle_torch"
+          android:background="@drawable/list_off"
+          android:layout_marginBottom="20dp"
           android:visibility="invisible"/>
 
+  <TextView
+      android:id="@+id/totch_text"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_gravity="bottom|center_horizontal"
+      android:background="@color/transparent"
+      android:text="@string/totch_text_off"
+      android:textColor="@color/status_text" />
 </merge>
