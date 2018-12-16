@@ -24,6 +24,11 @@
   <color name="result_view">#b0000000</color>
   <color name="status_text">#ffffffff</color>
   <color name="transparent">#00000000</color>
+  <color name="viewfinder_horn">#FF50FFA2</color><!--四角颜色-->
+  <color name="viewfinder_border">#FFFFFFFF</color><!--四角颜色-->
+  <color name="viewfinder_scanline_start">#0050FFA2</color><!--扫描线 开始-->
+  <color name="viewfinder_scanline_middle">#FF50FFA2</color><!--扫描线 中间-->
+  <color name="viewfinder_scanline_end">#0050FFA2</color><!--扫描线 结束-->
   <color name="viewfinder_laser">#50FFA2</color> <!-- Android standard ICS color -->
   <color name="viewfinder_mask">#90000000</color>
 </resources>

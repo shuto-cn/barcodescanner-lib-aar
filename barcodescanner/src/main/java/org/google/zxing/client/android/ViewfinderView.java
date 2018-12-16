@@ -26,9 +26,12 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.Xfermode;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -57,8 +60,17 @@ public final class ViewfinderView extends View {
   private final int maskColor;
   private final int resultColor;
   private final int laserColor;
+  private final int hornColor;
+  private final int borderColor;
   private final int resultPointColor;
-  private int scannerAlpha;
+
+    private final int scanLineStart;
+    private final int scanLineMiddle;
+    private final int scanLineEnd;
+
+    private int scannerAlpha;
+
+
   private List<ResultPoint> possibleResultPoints;
   private List<ResultPoint> lastPossibleResultPoints;
 
@@ -71,8 +83,13 @@ public final class ViewfinderView extends View {
     Resources resources = getResources();
     maskColor = resources.getColor(R.color.viewfinder_mask);
     resultColor = resources.getColor(R.color.result_view);
+    hornColor = resources.getColor(R.color.viewfinder_horn);
+    borderColor = resources.getColor(R.color.viewfinder_border);
     laserColor = resources.getColor(R.color.viewfinder_laser);
     resultPointColor = resources.getColor(R.color.possible_result_points);
+      scanLineStart = resources.getColor(R.color.viewfinder_scanline_start);
+      scanLineMiddle = resources.getColor(R.color.viewfinder_scanline_middle);
+      scanLineEnd = resources.getColor(R.color.viewfinder_scanline_end);
     scannerAlpha = 0;
     possibleResultPoints = new ArrayList<>(5);
     lastPossibleResultPoints = null;
@@ -84,7 +101,125 @@ public final class ViewfinderView extends View {
 
   @SuppressLint("DrawAllocation")
   @Override
-  public void onDraw(Canvas canvas) {
+  public void onDraw(Canvas canvas){
+      if (cameraManager == null) {
+          return; // not ready yet, early draw before done configuring
+      }
+      Rect frame = cameraManager.getFramingRect();
+      Rect previewFrame = cameraManager.getFramingRectInPreview();
+      if (frame == null || previewFrame == null) {
+          return;
+      }
+      int width = canvas.getWidth();
+      int height = canvas.getHeight();
+      //绘制背景
+      paint.setColor(resultBitmap != null ? resultColor : maskColor);
+      paint.setStyle(Paint.Style.FILL);
+      canvas.drawRect(0, 0, width, height,paint);
+
+      float rx=20,ry=20;
+      //清空扫码区域
+      paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+      canvas.drawRoundRect(new RectF(frame.left,frame.top,frame.right,frame.bottom),rx,ry,paint);
+      paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+
+      //绘制四个角所在区域为一个圆角矩形
+      paint.setColor(hornColor);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(10);// 设置“空心”的外框的宽度
+      canvas.drawRoundRect(new RectF(frame.left,frame.top,frame.right,frame.bottom),rx,ry,paint);
+      paint.setStyle(Paint.Style.FILL);
+      //清除多余边框
+      paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+      canvas.drawRect(frame.left+60,frame.top-5,frame.right-60,frame.bottom+5,paint);
+      canvas.drawRect(frame.left-5,frame.top+60,frame.right+5,frame.bottom-60,paint);
+      //绘制四角直线圆角头
+      paint.setStyle(Paint.Style.FILL);
+      paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OVER));
+      //左上
+      canvas.drawRoundRect(new RectF(frame.left+50, frame.top-5, frame.left + 70, frame.top+5),rx,ry, paint);//-
+      canvas.drawRoundRect(new RectF(frame.left-5, frame.top+50, frame.left+5, frame.top + 70),rx,ry,  paint);//|
+      //右上
+      canvas.drawRoundRect(new RectF(frame.right - 70, frame.top-5, frame.right-50, frame.top+5),rx,ry, paint);//-
+      canvas.drawRoundRect(new RectF(frame.right -5, frame.top + 50 , frame.right + 5, frame.top + 70),rx,ry, paint);//|
+      //左下
+      canvas.drawRoundRect(new RectF(frame.left + 50, frame.bottom - 5, frame.left + 70, frame.bottom + 5),rx,ry, paint);//-
+      canvas.drawRoundRect(new RectF(frame.left - 5, frame.bottom - 70, frame.left + 5, frame.bottom - 50),rx,ry, paint);//|
+      //右下
+      canvas.drawRoundRect(new RectF(frame.right - 70, frame.bottom - 5, frame.right - 50, frame.bottom + 5),rx,ry, paint);//-
+      canvas.drawRoundRect(new RectF(frame.right - 5, frame.bottom - 70 , frame.right + 5, frame.bottom - 50),rx,ry, paint);//|
+      //绘制白色边线
+      paint.setColor(borderColor);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(4);// 设置“空心”的外框的宽度
+      paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OVER));
+      canvas.drawRoundRect(new RectF(frame.left,frame.top,frame.right,frame.bottom),rx,ry,paint);
+      paint.setStyle(Paint.Style.FILL);
+      //填充边线空白部分
+      paint.setColor(resultBitmap != null ? resultColor : maskColor);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(6);// 设置“空心”的外框的宽度
+      paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OVER));
+      canvas.drawRoundRect(new RectF(frame.left-3,frame.top-3,frame.right+2,frame.bottom+2),rx,ry,paint);
+
+      //绘制扫描线
+      int middle = frame.height() / 2 + frame.top;
+      int laserLinePosition = middle;
+      laserLinePosition = laserLinePosition + 5;
+      if (laserLinePosition > frame.height()) {
+          laserLinePosition = 0;
+      }
+      LinearGradient linearGradient = new LinearGradient(frame.left + 1, frame.top + laserLinePosition, frame.right - 1, frame.top + 10 + laserLinePosition, new int[]{
+              scanLineStart,
+              scanLineMiddle,
+              scanLineEnd
+      }, new float[]{
+              0f,0.5f,1f
+      }, Shader.TileMode.CLAMP);
+
+      paint.setShader(linearGradient);
+      paint.setStyle(Paint.Style.FILL);
+      paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+      canvas.drawRect(frame.left + 1, middle-3, frame.right - 1, middle+4, paint);
+      paint.setShader(null);
+      float scaleX = frame.width() / (float)previewFrame.width();
+      float scaleY = frame.height() / (float)previewFrame.height();
+      List<ResultPoint> currentPossible = possibleResultPoints;
+      List<ResultPoint> currentLast = lastPossibleResultPoints;
+      int frameLeft = frame.left;
+      int frameTop = frame.top;
+      if (currentPossible.isEmpty()) {
+          lastPossibleResultPoints = null;
+
+      } else {
+          possibleResultPoints = new ArrayList <> (5);
+          lastPossibleResultPoints = currentPossible;
+          paint.setAlpha(CURRENT_POINT_OPACITY);
+          paint.setColor(resultPointColor);
+          for (ResultPoint point: currentPossible) {
+              canvas.drawCircle(frameLeft + (int)(point.getX() * scaleX),
+                      frameTop + (int)(point.getY() * scaleY),
+                      POINT_SIZE, paint);
+          }
+      }
+      if (currentLast != null) {
+          paint.setAlpha(CURRENT_POINT_OPACITY / 2);
+          paint.setColor(resultPointColor);
+          float radius = POINT_SIZE / 2.0f;
+          for (ResultPoint point: currentLast) {
+              canvas.drawCircle(frameLeft + (int)(point.getX() * scaleX),
+                      frameTop + (int)(point.getY() * scaleY),
+                      radius, paint);
+          }
+      }
+
+      postInvalidateDelayed(16,
+              frame.left,
+              frame.top,
+              frame.right,
+              frame.bottom);
+  }
+  /*public void onDraw(Canvas canvas) {
     if (cameraManager == null) {
       return; // not ready yet, early draw before done configuring
     }
@@ -179,85 +314,8 @@ public final class ViewfinderView extends View {
               frame.bottom);
       // postInvalidate();
     }
-  }
-  /*
-  public void onDraw(Canvas canvas) {
-    if (cameraManager == null) {
-      return; // not ready yet, early draw before done configuring
-    }
-    Rect frame = cameraManager.getFramingRect();
-    Rect previewFrame = cameraManager.getFramingRectInPreview();    
-    if (frame == null || previewFrame == null) {
-      return;
-    }
-    int width = canvas.getWidth();
-    int height = canvas.getHeight();
+  }*/
 
-    // Draw the exterior (i.e. outside the framing rect) darkened
-    paint.setColor(resultBitmap != null ? resultColor : maskColor);
-    canvas.drawRect(0, 0, width, frame.top, paint);
-    canvas.drawRect(0, frame.top, frame.left, frame.bottom + 1, paint);
-    canvas.drawRect(frame.right + 1, frame.top, width, frame.bottom + 1, paint);
-    canvas.drawRect(0, frame.bottom + 1, width, height, paint);
-
-    if (resultBitmap != null) {
-      // Draw the opaque result bitmap over the scanning rectangle
-      paint.setAlpha(CURRENT_POINT_OPACITY);
-      canvas.drawBitmap(resultBitmap, null, frame, paint);
-    } else {
-
-      // Draw a red "laser scanner" line through the middle to show decoding is active
-      paint.setColor(laserColor);
-      paint.setAlpha(SCANNER_ALPHA[scannerAlpha]);
-      scannerAlpha = (scannerAlpha + 1) % SCANNER_ALPHA.length;
-      int middle = frame.height() / 2 + frame.top;
-      canvas.drawRect(frame.left + 2, middle - 1, frame.right - 1, middle + 2, paint);
-      
-      float scaleX = frame.width() / (float) previewFrame.width();
-      float scaleY = frame.height() / (float) previewFrame.height();
-
-      List<ResultPoint> currentPossible = possibleResultPoints;
-      List<ResultPoint> currentLast = lastPossibleResultPoints;
-      int frameLeft = frame.left;
-      int frameTop = frame.top;
-      if (currentPossible.isEmpty()) {
-        lastPossibleResultPoints = null;
-      } else {
-        possibleResultPoints = new ArrayList<>(5);
-        lastPossibleResultPoints = currentPossible;
-        paint.setAlpha(CURRENT_POINT_OPACITY);
-        paint.setColor(resultPointColor);
-        synchronized (currentPossible) {
-          for (ResultPoint point : currentPossible) {
-            canvas.drawCircle(frameLeft + (int) (point.getX() * scaleX),
-                              frameTop + (int) (point.getY() * scaleY),
-                              POINT_SIZE, paint);
-          }
-        }
-      }
-      if (currentLast != null) {
-        paint.setAlpha(CURRENT_POINT_OPACITY / 2);
-        paint.setColor(resultPointColor);
-        synchronized (currentLast) {
-          float radius = POINT_SIZE / 2.0f;
-          for (ResultPoint point : currentLast) {
-            canvas.drawCircle(frameLeft + (int) (point.getX() * scaleX),
-                              frameTop + (int) (point.getY() * scaleY),
-                              radius, paint);
-          }
-        }
-      }
-
-      // Request another update at the animation interval, but only repaint the laser line,
-      // not the entire viewfinder mask.
-      postInvalidateDelayed(ANIMATION_DELAY,
-                            frame.left - POINT_SIZE,
-                            frame.top - POINT_SIZE,
-                            frame.right + POINT_SIZE,
-                            frame.bottom + POINT_SIZE);
-    }
-  }
-*/
   public void drawViewfinder() {
     Bitmap resultBitmap = this.resultBitmap;
     this.resultBitmap = null;
