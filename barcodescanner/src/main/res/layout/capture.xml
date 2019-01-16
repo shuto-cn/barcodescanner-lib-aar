@@ -199,7 +199,7 @@
         android:layout_gravity="bottom|center_horizontal"
         android:background="@color/transparent"
         android:text="扫描设备或者空间二维码"
-        android:layout_marginBottom="160dp"
+        android:layout_marginBottom="150dp"
         android:textColor="@color/status_text" />
   <TextView
       android:id="@+id/status_view"
@@ -208,7 +208,7 @@
       android:layout_gravity="bottom|center_horizontal"
       android:background="@color/transparent"
       android:text=""
-      android:layout_marginBottom="160dp"
+      android:layout_marginBottom="150dp"
       android:textColor="@color/transparent" />
 
   <Button android:id="@+id/flip_button"
