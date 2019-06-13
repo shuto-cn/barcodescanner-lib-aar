@@ -241,7 +241,8 @@ public final class CameraManager {
       //int width = findDesiredDimensionInRange(screenResolution.x, MIN_FRAME_WIDTH, MAX_FRAME_WIDTH);
       //int height = findDesiredDimensionInRange(screenResolution.y, MIN_FRAME_HEIGHT, MAX_FRAME_HEIGHT);
       DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-      int  width = (int)  (metrics.widthPixels * 0.7);
+      int pt = metrics.widthPixels > metrics.heightPixels ? metrics.heightPixels : metrics.widthPixels;
+      int  width = (int)  (pt * 0.7);
       int  height = width;
       int leftOffset = (screenResolution.x - width) / 2;
       int topOffset = (screenResolution.y - height) / 2;
