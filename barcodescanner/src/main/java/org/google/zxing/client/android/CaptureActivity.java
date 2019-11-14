@@ -157,6 +157,10 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
     //获取传来的参数
     Bundle extras = getIntent().getExtras();
+    if (extras!=null && extras.getString("prompt")!=null){
+      ((TextView)findViewById(R.id.showText)).setText(extras.getString("prompt"));
+    }
+    
     if (extras!=null && extras.getString("showText")!=null){
       ((TextView)findViewById(R.id.showText)).setText(extras.getString("showText"));
     }
